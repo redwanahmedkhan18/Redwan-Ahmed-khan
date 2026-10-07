@@ -901,7 +901,7 @@ def upgrade() -> None:
         sa.Column("start_date", sa.Date(), nullable=True),
         sa.Column("end_date", sa.Date(), nullable=True),
         sa.CheckConstraint(
-            "(is_current = 1 AND end_date IS NULL) OR (is_current = 0)",
+            "(is_current = TRUE AND end_date IS NULL) OR (is_current = FALSE)",
             name=op.f("ck_work_experience_current_no_end_date"),
         ),
         sa.ForeignKeyConstraint(

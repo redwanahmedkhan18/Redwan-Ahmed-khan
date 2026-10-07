@@ -41,24 +41,60 @@ def seed_roles(db: Session) -> models.Role:
     db.flush()
     return super_admin
 
+    
 
 def seed_admin_user(db: Session, role: models.Role) -> None:
-    exists = (
-        db.execute(select(models.User).where(models.User.email == settings.ADMIN_EMAIL.lower()))
+    """
+    Bootstrap the configured super-admin account.
+
+    Behavior:
+    - Creates the admin if it does not exist.
+    - If it already exists, synchronizes the configured bootstrap
+      password, role, and active status.
+    - The email is normalized to lowercase.
+    """
+    email = settings.ADMIN_EMAIL.strip().lower()
+
+    user = (
+        db.execute(
+            select(models.User).where(models.User.email == email)
+        )
         .scalars()
         .first()
     )
-    if exists:
-        return
-    db.add(
-        models.User(
-            email=settings.ADMIN_EMAIL.lower(),
+
+    if user is None:
+        user = models.User(
+            email=email,
             full_name="Redwan Ahmed Khan",
             hashed_password=hash_password(settings.ADMIN_PASSWORD),
             role_id=role.id,
             is_active=True,
         )
+
+        db.add(user)
+        db.flush()
+
+        logger.info(
+            "Bootstrap super-admin created: %s",
+            email,
+        )
+        return
+
+    # Synchronize the configured bootstrap account.
+    user.hashed_password = hash_password(settings.ADMIN_PASSWORD)
+    user.role_id = role.id
+    user.is_active = True
+
+    # Preserve the existing name unless it is empty.
+    if not user.full_name:
+        user.full_name = "Redwan Ahmed Khan"
+
+    logger.info(
+        "Bootstrap super-admin synchronized: %s",
+        email,
     )
+
 
 
 def seed_profile(db: Session) -> None:

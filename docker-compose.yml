@@ -11,26 +11,32 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-portfolio}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-portfolio} -d ${POSTGRES_DB:-portfolio}",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
+      start_period: 5s
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:6380:6379"
 
   backend:
     build:
       context: .
       dockerfile: docker/backend.Dockerfile
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-portfolio}:${POSTGRES_PASSWORD:-portfolio}@postgres:5432/${POSTGRES_DB:-portfolio}
       REDIS_URL: redis://redis:6379/0
@@ -40,6 +46,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     ports:
       - "127.0.0.1:8000:8000"
 
@@ -50,13 +58,15 @@ services:
       args:
         NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3000}
         API_INTERNAL_URL: http://backend:8000/api/v1
+        BACKEND_ORIGIN: http://backend:8000
     restart: unless-stopped
     environment:
       API_INTERNAL_URL: http://backend:8000/api/v1
       BACKEND_ORIGIN: http://backend:8000
       NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3000}
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     ports:
       - "3000:3000"
 

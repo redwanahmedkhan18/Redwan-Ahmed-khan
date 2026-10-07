@@ -237,7 +237,8 @@ class WorkExperience(PublishableMixin, DatedMixin, Base):
     technologies: Mapped[list[str]] = mapped_column(JSON, default=list)
     __table_args__ = (
         CheckConstraint(
-            "(is_current = 1 AND end_date IS NULL) OR (is_current = 0)", name="current_no_end_date"
+            "(is_current = TRUE AND end_date IS NULL) OR (is_current = FALSE)",
+            name="current_no_end_date"
         ),
         Index("ix_experience_order", "status", "display_order"),
     )
