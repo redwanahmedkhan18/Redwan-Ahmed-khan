@@ -1,0 +1,41 @@
+name: Deploy
+
+# Deploys only after lint, tests and build all succeed on main.
+on:
+  workflow_run:
+    workflows: ["Tests", "Build"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Adapt this block to your target (examples below) ----
+      - name: Deploy over SSH (VPS with Docker Compose)
+        if: ${{ vars.DEPLOY_TARGET == 'vps' }}
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            git pull --ff-only origin main
+            docker compose build
+            docker compose up -d
+            docker compose exec -T backend python -m alembic upgrade head
+            curl -fsS http://localhost:8000/ready
+
+      # Platform deploys (Vercel frontend / Render|Fly backend) trigger
+      # automatically from main; this job then runs post-deploy checks.
+      - name: Post-deploy smoke checks
+        run: |
+          SITE="${{ vars.SITE_URL }}"
+          API="${{ vars.API_URL }}"
+          if [ -n "$SITE" ]; then curl -fsS "$SITE/" -o /dev/null; fi
+          if [ -n "$API" ]; then curl -fsS "$API/health"; fi

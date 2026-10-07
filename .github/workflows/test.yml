@@ -1,0 +1,86 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: portfolio_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: Run pytest (PostgreSQL)
+        env:
+          DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/portfolio_test
+          ENVIRONMENT: testing
+          ADMIN_EMAIL: admin@example.com
+          ADMIN_PASSWORD: ChangeMe!123
+          SECRET_KEY: test-secret
+          JWT_SECRET: test-jwt-secret
+          STORAGE_LOCAL_DIR: /tmp/storage
+      - run: python -m alembic upgrade head
+      - run: pytest
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: backend-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Start backend
+        working-directory: backend
+        env:
+          DATABASE_URL: sqlite:///./e2e.db
+          ENVIRONMENT: testing
+          ADMIN_EMAIL: admin@example.com
+          ADMIN_PASSWORD: ChangeMe!123
+          SECRET_KEY: test-secret
+          JWT_SECRET: test-jwt-secret
+        run: |
+          pip install -e .
+          python -m alembic upgrade head
+          python -m app.db.seed
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+      - name: Build & start frontend
+        working-directory: frontend
+        env:
+          API_INTERNAL_URL: http://localhost:8000/api/v1
+          BACKEND_ORIGIN: http://localhost:8000
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: |
+          npm ci
+          npm run build
+          (npm run start -- --port 3000 &)
+          npx wait-on http://localhost:3000 http://localhost:8000/health
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npx playwright test
+        working-directory: frontend

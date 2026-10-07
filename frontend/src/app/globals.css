@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+/* Manual dark mode: .dark on <html> (light | dark | system handled by ThemeScript) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #fafaf9;
+  --bg-panel: #ffffff;
+  --bg-subtle: #f5f5f4;
+  --fg: #1c1917;
+  --fg-muted: #57534e;
+  --fg-subtle: #a8a29e;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+  --accent: #1d4ed8;
+  --accent-soft: #dbeafe;
+  --accent-fg: #1e40af;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  --grid-line: rgba(28, 25, 23, 0.04);
+}
+
+.dark {
+  --bg: #0a0c10;
+  --bg-panel: #0f1218;
+  --bg-subtle: #12161d;
+  --fg: #e7e9ee;
+  --fg-muted: #9aa1ad;
+  --fg-subtle: #5c636f;
+  --border: #1e242e;
+  --border-strong: #2a323e;
+  --accent: #6ea8fe;
+  --accent-soft: #16233c;
+  --accent-fg: #9cc3ff;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --grid-line: rgba(231, 233, 238, 0.035);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--bg-panel);
+  --color-subtle: var(--bg-subtle);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-faint: var(--fg-subtle);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-ok: var(--success);
+  --color-warn: var(--warning);
+  --color-bad: var(--danger);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* subtle engineering grid backdrop */
+.bg-grid {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-fg);
+}
+
+/* visible focus indicators (WCAG 2.2) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* prose (markdown content) */
+.prose-technical {
+  line-height: 1.75;
+  color: var(--fg-muted);
+}
+.prose-technical h1, .prose-technical h2, .prose-technical h3, .prose-technical h4 {
+  color: var(--fg);
+  font-weight: 650;
+  margin-top: 1.8em;
+  margin-bottom: 0.6em;
+  line-height: 1.3;
+}
+.prose-technical h2 { font-size: 1.35rem; }
+.prose-technical h3 { font-size: 1.1rem; }
+.prose-technical p { margin-bottom: 1em; }
+.prose-technical ul, .prose-technical ol { margin: 0.75em 0 1.25em 1.25em; }
+.prose-technical ul { list-style: disc; }
+.prose-technical ol { list-style: decimal; }
+.prose-technical li { margin-bottom: 0.4em; }
+.prose-technical li::marker { color: var(--fg-subtle); }
+.prose-technical code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  color: var(--accent-fg);
+}
+.prose-technical pre {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-bottom: 1.25em;
+}
+.prose-technical pre code { background: none; border: none; padding: 0; }
+.prose-technical a { color: var(--accent-fg); text-decoration: underline; text-underline-offset: 3px; }
+.prose-technical strong { color: var(--fg); font-weight: 650; }
+.prose-technical blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 1rem;
+  color: var(--fg-muted);
+  font-style: italic;
+  margin-bottom: 1em;
+}
+.prose-technical hr { border-color: var(--border); margin: 2em 0; }
+.prose-technical table { width: 100%; border-collapse: collapse; margin-bottom: 1.25em; font-size: 0.9em; }
+.prose-technical th, .prose-technical td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+.prose-technical th { background: var(--bg-subtle); color: var(--fg); }
